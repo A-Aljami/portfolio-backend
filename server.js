@@ -134,6 +134,15 @@ const transporter = nodemailer.createTransport({
   }
 });
 
+// Verify transporter configuration on startup
+transporter.verify(function (error, success) {
+  if (error) {
+    console.error('❌ Email transporter verification failed:', error);
+  } else {
+    console.log('✅ Email server is ready to send messages');
+  }
+});
+
 // ✅ FIX 8: Apply both rate limiters
 app.post('/api/send-email', dailyLimiter, emailLimiter, async (req, res) => {
   try {
@@ -217,6 +226,11 @@ app.post('/api/send-email', dailyLimiter, emailLimiter, async (req, res) => {
       email: email.toLowerCase().trim(),
       message: sanitizeInput(message)
     };
+
+    console.log('📧 Attempting to send email...');
+    console.log('From:', process.env.EMAIL_USER);
+    console.log('To:', process.env.EMAIL_USER);
+    console.log('Reply-To:', sanitizedData.email);
 
     // Send email
     await transporter.sendMail({
@@ -303,8 +317,13 @@ app.post('/api/send-email', dailyLimiter, emailLimiter, async (req, res) => {
     });
 
   } catch (error) {
-    // ✅ FIX 11: Don't leak error details to client
-    console.error('❌ Email sending failed:', error);
+    // ✅ FIX 11: Enhanced error logging
+    console.error('❌ Email sending failed:');
+    console.error('Error name:', error.name);
+    console.error('Error message:', error.message);
+    console.error('Error code:', error.code);
+    console.error('Full error:', error);
+    
     res.status(500).json({ 
       success: false, 
       error: 'Failed to send email. Please try again later.' 
