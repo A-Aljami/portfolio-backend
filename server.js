@@ -110,8 +110,9 @@ const verifyCaptcha = async (token) => {
     );
     
     // Score between 0.0 (bot) and 1.0 (human)
-    // Accept if score >= 0.5
-    return response.data.success && response.data.score >= 0.5;
+    // Accept if score >= 0.3 (lowered for testing)
+    console.log('reCAPTCHA score:', response.data.score);
+    return response.data.success && response.data.score >= 0.3;
   } catch (error) {
     console.error('reCAPTCHA verification failed:', error);
     return false;
