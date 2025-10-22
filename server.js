@@ -248,7 +248,7 @@ app.post('/api/send-email', dailyLimiter, emailLimiter, async (req, res) => {
       to: process.env.SENDGRID_TO_EMAIL,
       from: process.env.SENDGRID_FROM_EMAIL,
       replyTo: sanitizedData.email,
-      subject: `🚀 New Portfolio Contact from ${sanitizedData.firstName} ${sanitizedData.lastName}`,
+      subject: `New Contact: ${sanitizedData.firstName} ${sanitizedData.lastName} - Portfolio`,
       html: `
         <!DOCTYPE html>
         <html>
