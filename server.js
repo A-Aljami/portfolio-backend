@@ -9,6 +9,9 @@ dotenv.config();
 
 const app = express();
 
+// Enable trust proxy for Render (behind reverse proxy)
+app.set('trust proxy', 1);
+
 // ✅ FIX 1: Request size limit (prevent large payloads)
 app.use(express.json({ limit: '10kb' }));
 
