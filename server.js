@@ -2,7 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
-import nodemailer from 'nodemailer';
+import sgMail from '@sendgrid/mail';
 import axios from 'axios';
 
 dotenv.config();
@@ -126,28 +126,15 @@ const validateName = (name) => {
   return nameRegex.test(name) && name.length >= 2 && name.length <= 50;
 };
 
-const transporter = nodemailer.createTransport({
-  host: 'smtp.gmail.com',
-  port: 587,
-  secure: false, // use STARTTLS
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS
-  },
-  tls: {
-    ciphers: 'SSLv3',
-    rejectUnauthorized: false
-  }
-});
+// Initialize SendGrid
+sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
-// Verify transporter configuration on startup
-transporter.verify(function (error, success) {
-  if (error) {
-    console.error('❌ Email transporter verification failed:', error);
-  } else {
-    console.log('✅ Email server is ready to send messages');
-  }
-});
+// Verify SendGrid configuration on startup
+if (process.env.SENDGRID_API_KEY) {
+  console.log('✅ SendGrid API key configured');
+} else {
+  console.error('❌ SENDGRID_API_KEY not found in environment variables');
+}
 
 // ✅ FIX 8: Apply both rate limiters
 app.post('/api/send-email', dailyLimiter, emailLimiter, async (req, res) => {
@@ -233,15 +220,15 @@ app.post('/api/send-email', dailyLimiter, emailLimiter, async (req, res) => {
       message: sanitizeInput(message)
     };
 
-    console.log('📧 Attempting to send email...');
-    console.log('From:', process.env.EMAIL_USER);
-    console.log('To:', process.env.EMAIL_USER);
+    console.log('📧 Attempting to send email via SendGrid...');
+    console.log('From:', process.env.SENDGRID_FROM_EMAIL);
+    console.log('To:', process.env.SENDGRID_TO_EMAIL);
     console.log('Reply-To:', sanitizedData.email);
 
-    // Send email
-    await transporter.sendMail({
-      from: process.env.EMAIL_USER,
-      to: process.env.EMAIL_USER,
+    // Send email with SendGrid
+    const emailContent = {
+      to: process.env.SENDGRID_TO_EMAIL,
+      from: process.env.SENDGRID_FROM_EMAIL,
       replyTo: sanitizedData.email,
       subject: `🚀 New Portfolio Contact from ${sanitizedData.firstName} ${sanitizedData.lastName}`,
       html: `
@@ -313,9 +300,10 @@ app.post('/api/send-email', dailyLimiter, emailLimiter, async (req, res) => {
         </body>
         </html>
       `
-    });
+    };
 
-    console.log('✅ Email sent successfully from:', sanitizedData.email);
+    await sgMail.send(emailContent);
+    console.log('✅ Email sent successfully via SendGrid from:', sanitizedData.email);
     
     res.json({ 
       success: true, 
