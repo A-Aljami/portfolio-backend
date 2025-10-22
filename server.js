@@ -95,9 +95,13 @@ const sanitizeInput = (str) => {
 
 // reCAPTCHA verification
 const verifyCaptcha = async (token) => {
-  if (!token) return false;
+  if (!token) {
+    console.log('❌ No reCAPTCHA token provided');
+    return false;
+  }
   
   try {
+    console.log('🔍 Verifying reCAPTCHA token...');
     const response = await axios.post(
       'https://www.google.com/recaptcha/api/siteverify',
       null,
@@ -109,12 +113,23 @@ const verifyCaptcha = async (token) => {
       }
     );
     
+    console.log('reCAPTCHA response:', JSON.stringify(response.data, null, 2));
+    console.log('Success:', response.data.success);
+    console.log('Score:', response.data.score);
+    console.log('Action:', response.data.action);
+    console.log('Hostname:', response.data.hostname);
+    
+    if (response.data['error-codes']) {
+      console.error('reCAPTCHA error codes:', response.data['error-codes']);
+    }
+    
     // Score between 0.0 (bot) and 1.0 (human)
     // Accept if score >= 0.3 (lowered for testing)
-    console.log('reCAPTCHA score:', response.data.score);
-    return response.data.success && response.data.score >= 0.3;
+    const isValid = response.data.success && response.data.score >= 0.3;
+    console.log('Is valid?', isValid);
+    return isValid;
   } catch (error) {
-    console.error('reCAPTCHA verification failed:', error);
+    console.error('reCAPTCHA verification exception:', error);
     return false;
   }
 };
